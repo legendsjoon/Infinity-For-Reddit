@@ -19,13 +19,37 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup and build with Gradle
-      uses: gradle/gradle-build-action@v2
-      with:
-        arguments: build -x lint
+    - name: Set up Android SDK
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openjdk-17-jdk
+        sudo mkdir -p /usr/local/lib/android/sdk/cmdline-tools/latest
+        sudo chown -R $USER:$USER /usr/local/lib/android/sdk
+        curl -o sdk-tools-linux.zip https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
+        unzip sdk-tools-linux.zip -d /usr/local/lib/android/sdk/cmdline-tools/latest
+        /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+
+    - name: Change API key
+      run: |
+        OLD_API_KEY="NOe2iKrPPzwscA"
+        NEW_API_KEY="${{ secrets.API_KEY }}"
+        sed -i "s/${OLD_API_KEY}/${NEW_API_KEY}/g" app/src/main/java/ml/docilealligator/infinityforreddit/utils/APIUtils.java
+
+    - name: Grant execute permission for Gradlew
+      run: chmod +x ./gradlew
+  
+    - name: Clean project
+      run: ./gradlew clean
+  
+    - name: Build app using Gradle
+      run: ./gradlew assembleRelease
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     - name: Upload apk
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Infinity-${{github.sha}}
         path: app/build/outputs/apk/

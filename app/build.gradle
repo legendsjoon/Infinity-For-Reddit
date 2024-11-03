@@ -53,6 +53,16 @@ android {
         buildConfig = true
         viewBinding = true
     }
+
+        signingConfigs {
+        release {
+            storeFile file("joon.keystore")
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+        }
+    }
+
     namespace 'ml.docilealligator.infinityforreddit'
 }
 
